@@ -82,34 +82,13 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
 
     <script is:inline>
       (function () {
-        var links = document.querySelectorAll(".toc a");
-        var byId = {};
-        links.forEach(function (a) {
-          byId[decodeURIComponent(a.getAttribute("href").slice(1))] = a;
-        });
-        var targets = Array.prototype.filter.call(document.querySelectorAll(".prose h2, .prose h3"), function (h) {
-          return byId[h.id];
-        });
-        if (!("IntersectionObserver" in window) || !targets.length) return;
-        var current;
-        var io = new IntersectionObserver(
-          function (entries) {
-            entries.forEach(function (e) {
-              if (!e.isIntersecting) return;
-              if (current) current.removeAttribute("aria-current");
-              current = byId[e.target.id];
-              current.setAttribute("aria-current", "true");
-            });
-          },
-          { rootMargin: "0px 0px -75% 0px" }
-        );
-        targets.forEach(function (t) {
-          io.observe(t);
-        });
-        if (window.matchMedia("(max-width: 1023px)").matches) {
-          var d = document.querySelector(".toc details");
-          if (d) d.removeAttribute("open");
+        var details = document.querySelector(".toc details");
+        var desktop = window.matchMedia("(min-width: 1024px)");
+        function syncToc() {
+          details.open = desktop.matches;
         }
+        syncToc();
+        desktop.addEventListener("change", syncToc);
       })();
     </script>
   </body>
@@ -132,7 +111,7 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
   }
 
   @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
+    :root {
       --bg: #0f1719;
       --surface: #162124;
       --ink: #e7e3da;
@@ -144,19 +123,6 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
       --tip-edge: #e0a043;
       --tip-title: #f2c077;
     }
-  }
-
-  :root[data-theme="dark"] {
-    --bg: #0f1719;
-    --surface: #162124;
-    --ink: #e7e3da;
-    --muted: #9eaeb1;
-    --rule: #26363a;
-    --accent: #6cc6c4;
-    --accent-ink: #8fd8d5;
-    --tip-bg: #2a2214;
-    --tip-edge: #e0a043;
-    --tip-title: #f2c077;
   }
 
   *,
@@ -324,8 +290,7 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
     color: var(--muted);
   }
 
-  .toc a:hover,
-  .toc a[aria-current] {
+  .toc a:hover {
     color: var(--accent);
     border-left-color: var(--accent);
   }
