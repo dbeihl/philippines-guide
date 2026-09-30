@@ -108,7 +108,7 @@ Once the eSIM is active:
 
 ### Data is cheap, so use it
 
-One of the great things about the Philippines is that mobile data is affordable. Your Globe eSIM plan will likely give you plenty of data for maps, messaging, and Grab rides. Just top it up if you're running low. You can do this through GCash or at 7-Eleven.
+One of the great things about the Philippines is that mobile data is affordable. Your eSIM plan will likely give you plenty of data for maps, messaging, and Grab rides. Just top it up if you're running low. With a Klook eSIM, you add data in the Klook app. If you pick up a local Globe prepaid SIM, you can reload it through GCash or at 7-Eleven.
 
 ### Expect spotty coverage
 
