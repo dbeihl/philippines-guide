@@ -1,0 +1,475 @@
+---
+import { Image, getImage } from "astro:assets";
+
+const { frontmatter, headings = [] } = Astro.props;
+const { title, description, cover, coverAlt } = frontmatter;
+
+const assets = import.meta.glob<{ default: ImageMetadata }>("../assets/*.{jpg,jpeg,png,webp}", { eager: true });
+const coverEntry = Object.entries(assets).find(([path]) => path.endsWith(`/${cover}`));
+if (!coverEntry) throw new Error(`Cover image "${cover}" not found in src/assets/`);
+const coverImage = coverEntry[1].default;
+const ogImage = await getImage({ src: coverImage, width: 1200, format: "jpeg" });
+const ogImageUrl = new URL(ogImage.src, Astro.site).href;
+const pageUrl = new URL(Astro.url.pathname, Astro.site).href;
+
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+const base = import.meta.env.BASE_URL.replace(/\/?$/, "/");
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="icon" href={`${base}favicon.svg`} type="image/svg+xml" />
+    <link rel="canonical" href={pageUrl} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#0f5e62" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={pageUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:alt" content={coverAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to content</a>
+
+    <header class="hero">
+      <Image
+        class="hero-img"
+        src={coverImage}
+        alt={coverAlt}
+        widths={[640, 960, 1280, 1500]}
+        sizes="100vw"
+        loading="eager"
+        fetchpriority="high"
+      />
+      <div class="hero-text">
+        <p class="eyebrow">A traveler's field notes</p>
+        <h1>{title}</h1>
+        <p class="lede">{description}</p>
+      </div>
+    </header>
+
+    <div class="shell">
+      <nav class="toc" aria-label="On this page">
+        <details open>
+          <summary>On this page</summary>
+          <ol>
+            {
+              toc.map((h) => (
+                <li class={`d${h.depth}`}>
+                  <a href={`#${h.slug}`}>{h.text}</a>
+                </li>
+              ))
+            }
+          </ol>
+        </details>
+      </nav>
+
+      <main id="content" class="prose">
+        <slot />
+      </main>
+    </div>
+
+    <footer class="foot">
+      <p>Written by David Beihl from his own trip. Prices, apps, and rules change, so double-check anything official before you fly.</p>
+      <p><a href="#">Back to top</a></p>
+    </footer>
+
+    <script is:inline>
+      (function () {
+        var links = document.querySelectorAll(".toc a");
+        var byId = {};
+        links.forEach(function (a) {
+          byId[decodeURIComponent(a.getAttribute("href").slice(1))] = a;
+        });
+        var targets = Array.prototype.filter.call(document.querySelectorAll(".prose h2, .prose h3"), function (h) {
+          return byId[h.id];
+        });
+        if (!("IntersectionObserver" in window) || !targets.length) return;
+        var current;
+        var io = new IntersectionObserver(
+          function (entries) {
+            entries.forEach(function (e) {
+              if (!e.isIntersecting) return;
+              if (current) current.removeAttribute("aria-current");
+              current = byId[e.target.id];
+              current.setAttribute("aria-current", "true");
+            });
+          },
+          { rootMargin: "0px 0px -75% 0px" }
+        );
+        targets.forEach(function (t) {
+          io.observe(t);
+        });
+        if (window.matchMedia("(max-width: 1023px)").matches) {
+          var d = document.querySelector(".toc details");
+          if (d) d.removeAttribute("open");
+        }
+      })();
+    </script>
+  </body>
+</html>
+
+<style is:global>
+  :root {
+    --bg: #fbf8f2;
+    --surface: #ffffff;
+    --ink: #1d2a2d;
+    --muted: #56676b;
+    --rule: #e5ddcf;
+    --accent: #0f5e62;
+    --accent-ink: #0b4a4d;
+    --tip-bg: #fff3dc;
+    --tip-edge: #d98c1f;
+    --tip-title: #8a4f00;
+    --serif: ui-serif, "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1719;
+      --surface: #162124;
+      --ink: #e7e3da;
+      --muted: #9eaeb1;
+      --rule: #26363a;
+      --accent: #6cc6c4;
+      --accent-ink: #8fd8d5;
+      --tip-bg: #2a2214;
+      --tip-edge: #e0a043;
+      --tip-title: #f2c077;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --bg: #0f1719;
+    --surface: #162124;
+    --ink: #e7e3da;
+    --muted: #9eaeb1;
+    --rule: #26363a;
+    --accent: #6cc6c4;
+    --accent-ink: #8fd8d5;
+    --tip-bg: #2a2214;
+    --tip-edge: #e0a043;
+    --tip-title: #f2c077;
+  }
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 1.0625rem/1.7 var(--sans);
+    overflow-x: hidden;
+  }
+
+  a {
+    color: var(--accent);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.18em;
+  }
+
+  a:hover {
+    color: var(--accent-ink);
+    text-decoration-thickness: 2px;
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--tip-edge);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
+  .skip {
+    position: absolute;
+    left: -9999px;
+    top: 0.5rem;
+    background: var(--surface);
+    padding: 0.5rem 0.75rem;
+    z-index: 10;
+  }
+
+  .skip:focus {
+    left: 0.5rem;
+  }
+
+  .hero {
+    position: relative;
+    height: min(72vh, 680px);
+    min-height: 420px;
+    overflow: hidden;
+    color: #fff;
+    background: #0f5e62;
+  }
+
+  .hero-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 62%;
+  }
+
+  .hero::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(8, 24, 26, 0) 35%, rgba(8, 24, 26, 0.78) 100%);
+  }
+
+  .hero-text {
+    position: absolute;
+    z-index: 1;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 0 1rem 2.25rem;
+  }
+
+  .eyebrow {
+    margin: 0 0 0.35rem;
+    font-size: 0.8rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+
+  .hero h1 {
+    margin: 0;
+    font: 600 clamp(2.2rem, 6vw, 4rem) / 1.05 var(--serif);
+    letter-spacing: -0.01em;
+    text-shadow: 0 1px 12px rgba(0, 0, 0, 0.35);
+  }
+
+  .lede {
+    max-width: 40rem;
+    margin: 0.75rem 0 0;
+    font-size: clamp(1rem, 2.2vw, 1.2rem);
+    line-height: 1.5;
+    opacity: 0.95;
+  }
+
+  .shell {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+  }
+
+  .toc details {
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    background: var(--surface);
+    padding: 0.75rem 1rem;
+  }
+
+  .toc summary {
+    cursor: pointer;
+    font: 600 0.8rem/1.4 var(--sans);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .toc ol {
+    list-style: none;
+    margin: 0.75rem 0 0;
+    padding: 0;
+  }
+
+  .toc li {
+    margin: 0;
+  }
+
+  .toc a {
+    display: block;
+    padding: 0.2rem 0 0.2rem 0.75rem;
+    border-left: 2px solid transparent;
+    color: var(--ink);
+    text-decoration: none;
+    line-height: 1.35;
+  }
+
+  .toc .d2 a {
+    font-weight: 600;
+    margin-top: 0.45rem;
+  }
+
+  .toc .d3 a {
+    padding-left: 1.5rem;
+    font-size: 0.92rem;
+    color: var(--muted);
+  }
+
+  .toc a:hover,
+  .toc a[aria-current] {
+    color: var(--accent);
+    border-left-color: var(--accent);
+  }
+
+  .prose {
+    min-width: 0;
+    max-width: 44rem;
+    margin-top: 1.75rem;
+  }
+
+  .prose > p:first-child {
+    font-size: 1.2rem;
+    line-height: 1.6;
+  }
+
+  .prose h2 {
+    margin: 3.25rem 0 0.75rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rule);
+    font: 600 clamp(1.6rem, 3.5vw, 2.1rem) / 1.2 var(--serif);
+    scroll-margin-top: 1rem;
+  }
+
+  .prose h3 {
+    margin: 2rem 0 0.5rem;
+    font: 600 1.3rem/1.3 var(--serif);
+    color: var(--accent-ink);
+    scroll-margin-top: 1rem;
+  }
+
+  .prose ul,
+  .prose ol {
+    padding-left: 1.4rem;
+  }
+
+  .prose li {
+    margin: 0.3rem 0;
+  }
+
+  .prose li::marker {
+    color: var(--accent);
+  }
+
+  .prose h4 {
+    margin: 1.5rem 0 0.25rem;
+    font: 600 0.85rem/1.4 var(--sans);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .prose blockquote {
+    margin: 1.75rem 0;
+    padding: 1rem 1.25rem;
+    background: var(--tip-bg);
+    border-left: 4px solid var(--tip-edge);
+    border-radius: 0 10px 10px 0;
+  }
+
+  .prose blockquote p {
+    margin: 0.5rem 0 0;
+  }
+
+  .prose blockquote p:first-child {
+    margin-top: 0;
+  }
+
+  .prose blockquote p:first-child > strong:first-child {
+    display: block;
+    margin-bottom: 0.2rem;
+    font: 600 1.15rem/1.35 var(--serif);
+    color: var(--tip-title);
+  }
+
+  .prose img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 10px;
+  }
+
+  .foot {
+    border-top: 1px solid var(--rule);
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 1.5rem 1rem 3rem;
+    color: var(--muted);
+    font-size: 0.92rem;
+  }
+
+  .foot p {
+    margin: 0.35rem 0;
+  }
+
+  @media (min-width: 1024px) {
+    .shell {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 44rem);
+      gap: 3.5rem;
+      justify-content: center;
+      padding-top: 2.5rem;
+    }
+
+    .toc details {
+      max-height: calc(100vh - 3rem);
+      overflow: auto;
+      border: 0;
+      background: none;
+      padding: 0;
+    }
+
+    .toc summary {
+      pointer-events: none;
+      list-style: none;
+    }
+
+    .toc summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .toc {
+      align-self: start;
+      position: sticky;
+      top: 1.5rem;
+    }
+
+    .prose {
+      margin-top: 0;
+    }
+  }
+
+  @media print {
+    .hero {
+      height: 260px;
+      min-height: 0;
+    }
+
+    .toc,
+    .skip,
+    .foot a {
+      display: none;
+    }
+
+    .prose blockquote {
+      break-inside: avoid;
+    }
+  }
+</style>
